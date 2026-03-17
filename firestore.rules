@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !('field' in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidSupplier() {
+      return hasOnlyAllowedFields(['userId', 'name', 'phone', 'address']) &&
+             isValidString('name', 1, 100) &&
+             isValidString('phone', 0, 50) &&
+             isValidString('address', 0, 200);
+    }
+
+    function isValidProduct() {
+      return hasOnlyAllowedFields(['userId', 'name', 'category', 'rate']) &&
+             isValidString('name', 1, 100) &&
+             isValidString('category', 0, 100) &&
+             request.resource.data.rate is number && request.resource.data.rate >= 0;
+    }
+
+    function isValidOrder() {
+      return hasOnlyAllowedFields(['userId', 'supplierId', 'productId', 'totalQuantity', 'rate', 'date']) &&
+             isValidString('supplierId', 1, 100) &&
+             isValidString('productId', 1, 100) &&
+             request.resource.data.totalQuantity is number && request.resource.data.totalQuantity > 0 &&
+             request.resource.data.rate is number && request.resource.data.rate >= 0 &&
+             isValidDateString(request.resource.data.date);
+    }
+
+    function isValidDelivery() {
+      return hasOnlyAllowedFields(['userId', 'orderId', 'quantity', 'date', 'note']) &&
+             isValidString('orderId', 1, 100) &&
+             request.resource.data.quantity is number && request.resource.data.quantity > 0 &&
+             isValidDateString(request.resource.data.date) &&
+             (!('note' in request.resource.data) || isValidString('note', 0, 500));
+    }
+
+    function isValidPayment() {
+      return hasOnlyAllowedFields(['userId', 'orderId', 'amount', 'date', 'note']) &&
+             isValidString('orderId', 1, 100) &&
+             request.resource.data.amount is number && request.resource.data.amount > 0 &&
+             isValidDateString(request.resource.data.date) &&
+             (!('note' in request.resource.data) || isValidString('note', 0, 500));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /suppliers/{supplierId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && uidUnchanged() && isValidSupplier();
+      allow update: if isDocOwner() && uidNotModified() && isValidSupplier();
+      allow delete: if isDocOwner();
+    }
+
+    match /products/{productId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && uidUnchanged() && isValidProduct();
+      allow update: if isDocOwner() && uidNotModified() && isValidProduct();
+      allow delete: if isDocOwner();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && uidUnchanged() && isValidOrder();
+      allow update: if isDocOwner() && uidNotModified() && isValidOrder();
+      allow delete: if isDocOwner();
+    }
+
+    match /deliveries/{deliveryId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && uidUnchanged() && isValidDelivery();
+      allow update: if isDocOwner() && uidNotModified() && isValidDelivery();
+      allow delete: if isDocOwner();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && uidUnchanged() && isValidPayment();
+      allow update: if isDocOwner() && uidNotModified() && isValidPayment();
+      allow delete: if isDocOwner();
+    }
+  }
+}

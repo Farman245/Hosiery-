@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "Supplier": {
+      "title": "Supplier",
+      "description": "A supplier of hosiery products",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["userId", "name", "phone", "address"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product available for order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "rate": { "type": "number" }
+      },
+      "required": ["userId", "name", "category", "rate"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "An order placed with a supplier",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "productId": { "type": "string" },
+        "totalQuantity": { "type": "number" },
+        "rate": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "supplierId", "productId", "totalQuantity", "rate", "date"]
+    },
+    "Delivery": {
+      "title": "Delivery",
+      "description": "A delivery received for an order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" }
+      },
+      "required": ["userId", "orderId", "quantity", "date"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "A payment made for an order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "orderId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "note": { "type": "string" }
+      },
+      "required": ["userId", "orderId", "amount", "date"]
+    }
+  },
+  "firestore": {
+    "/suppliers/{supplierId}": { "schema": { "$ref": "#/entities/Supplier" }, "description": "Collection of suppliers" },
+    "/products/{productId}": { "schema": { "$ref": "#/entities/Product" }, "description": "Collection of products" },
+    "/orders/{orderId}": { "schema": { "$ref": "#/entities/Order" }, "description": "Collection of orders" },
+    "/deliveries/{deliveryId}": { "schema": { "$ref": "#/entities/Delivery" }, "description": "Collection of deliveries" },
+    "/payments/{paymentId}": { "schema": { "$ref": "#/entities/Payment" }, "description": "Collection of payments" }
+  }
+}
